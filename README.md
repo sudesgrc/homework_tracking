@@ -30,18 +30,18 @@ Uygulama; ödevlerin teslim tarihlerini görselleştirir, yaklaşan ve geciken �
 
 ### Ders Ekleme Paneli
 <p align="center">
-  <img src="screenshots/dersekle" width="700"/>
+  <img src="screenshots/dersekle.png" width="700"/>
 </p>
 
 ### Grafik Detayı
 <p align="center">
-  <img src="screenshots/grafik" width="700"/>
+  <img src="screenshots/grafik.png" width="700"/>
 </p>
 
 ### Ödev Takip Paneli
 
 <p align="center">
-  <img src="screenshots/dersler" width="700"/>
+  <img src="screenshots/dersler.png" width="700"/>
 </p>
 
 ---
