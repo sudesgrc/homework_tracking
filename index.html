@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ödev Takip Uygulaması</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .form {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .form input,
+        .form textarea,
+        .form button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+        }
+
+        .form button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .kategoriler {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .kutu {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .odev {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            color: white;
+        }
+
+        .aktif {
+            background: #4CAF50;
+        }
+
+        .yaklasan {
+            background: #FFC107;
+            color: black;
+        }
+
+        .geciken {
+            background: #F44336;
+        }
+
+        .tamamlandi {
+            background: #2196F3;
+        }
+
+        button.small {
+            margin-top: 6px;
+            padding: 5px;
+            font-size: 12px;
+        }
+
+        canvas {
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>📘 Ödev Takip Uygulaması</h1>
+
+        <div class="form">
+            <input id="ders" placeholder="Ders Adı">
+            <input id="ad" placeholder="Ödev Adı">
+            <input type="date" id="tarih">
+            <textarea id="aciklama" placeholder="Açıklama"></textarea>
+            <button onclick="odevEkle()">Ödev Ekle</button>
+        </div>
+
+        <div style="max-width: 400px; margin: 20px auto;">
+            <canvas id="grafik"></canvas>
+        </div>
+
+        <div class="kategoriler">
+
+            <div class="kutu">
+                <h3>🟢 Aktif Ödevler</h3>
+                <div id="aktif"></div>
+            </div>
+
+            <div class="kutu">
+                <h3>🟡 Yaklaşan Ödevler</h3>
+                <div id="yaklasan"></div>
+            </div>
+
+            <div class="kutu">
+                <h3>🔴 Geçmiş Ödevler</h3>
+                <div id="gecmis"></div>
+            </div>
+
+            <div class="kutu">
+                <h3>✅ Tamamlanan</h3>
+                <div id="tamamlanan"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let odevler = JSON.parse(localStorage.getItem("odevler")) || [];
+        let grafik;
+
+        function gunFarki(tarih) {
+            if (!tarih) return null;
+
+            let bugun = new Date();
+            let t = new Date(tarih);
+
+            if (isNaN(t.getTime())) return null;
+
+            bugun.setHours(0, 0, 0, 0);
+            t.setHours(0, 0, 0, 0);
+
+            return Math.floor((t - bugun) / (1000 * 60 * 60 * 24));
+        }
+
+
+        function odevEkle() {
+            let tarih = document.getElementById("tarih").value;
+            if (!tarih) return alert("Tarih seç!");
+
+            odevler.push({
+                id: Date.now(),
+                ders: ders.value,
+                ad: ad.value,
+                teslimTarihi: tarih,
+                aciklama: aciklama.value,
+                tamamlandi: false
+            });
+
+            localStorage.setItem("odevler", JSON.stringify(odevler));
+            listele();
+        }
+
+        function tamamla(id) {
+            odevler.find(o => o.id === id).tamamlandi = true;
+            localStorage.setItem("odevler", JSON.stringify(odevler));
+            listele();
+        }
+
+        function listele() {
+            aktif.innerHTML = yaklasan.innerHTML = gecmis.innerHTML = tamamlanan.innerHTML = "";
+
+            let sayac = { aktif: 0, yaklasan: 0, geciken: 0, tamam: 0 };
+
+            odevler.forEach(o => {
+                let g = gunFarki(o.teslimTarihi);
+                let div = document.createElement("div");
+                div.className = "odev";
+
+                div.innerHTML = `<b>${o.ders}</b><br>${o.ad}<br>${g} gün`;
+
+                if (o.tamamlandi) {
+                    div.classList.add("tamamlandi");
+                    tamamlanan.appendChild(div);
+                    sayac.tamam++;
+                } else if (g < 0) {
+                    div.classList.add("geciken");
+                    gecmis.appendChild(div);
+                    sayac.geciken++;
+                } else if (g <= 2) {
+                    div.classList.add("yaklasan");
+                    yaklasan.appendChild(div);
+                    sayac.yaklasan++;
+                } else {
+                    div.classList.add("aktif");
+                    div.innerHTML += `<br><button class="small" onclick="tamamla(${o.id})">Tamamla</button>`;
+                    aktif.appendChild(div);
+                    sayac.aktif++;
+                }
+            });
+
+            grafikGuncelle(sayac);
+        }
+
+        function grafikGuncelle(s) {
+            if (grafik) grafik.destroy();
+
+            grafik = new Chart(document.getElementById("grafik"), {
+                type: "doughnut",
+                data: {
+                    labels: ["Aktif", "Yaklaşan", "Geciken", "Tamamlanan"],
+                    datasets: [{
+                        data: [s.aktif, s.yaklasan, s.geciken, s.tamam],
+                        backgroundColor: ["#4CAF50", "#FFC107", "#F44336", "#2196F3"]
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: { size: 14 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        listele();
+    </script>
+</body>
+
+</html>
